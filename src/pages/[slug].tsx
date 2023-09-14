@@ -1,5 +1,5 @@
 import { useRouter } from "next/router";
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useContext, useState } from "react";
 import MainLayout from "../layouts/MainLayouts";
 import { trpc } from "../utils/trpc";
 import { AiOutlineLoading3Quarters } from "react-icons/ai";
@@ -11,10 +11,30 @@ import UnsplashGallary from "../components/UnsplashGallary";
 import { useSession } from "next-auth/react";
 import Image from "next/image";
 import { Interweave } from "interweave";
+import { globalContext } from "../context/GlobalContextProvider";
+
+import UpdateFormModal from "../components/UpdateFormModal";
+import Modal from "../components/Modal";
+import toast from "react-hot-toast";
+import { useForm, useWatch } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
 
 const PostPage = () => {
   const router = useRouter();
   const { data } = useSession();
+  const { setIsUpdateModalOpen } = useContext(globalContext);
+  const [deletePostModal, setDeletePostModal] = useState(false);
+  const [authorModal, setAuthorModal] = useState(false);
+
+  const { register, watch } = useForm<{ search: string }>({
+    resolver: zodResolver(
+      z.object({
+        search: z.string(),
+      })
+    ),
+  });
+  const watchQuery = watch("search", "");
 
   const postRoute = trpc.useContext().post;
 
@@ -26,6 +46,9 @@ const PostPage = () => {
       enabled: Boolean(router.query.slug),
     }
   );
+  const getAllUsers = trpc.user.getAllUser.useQuery({ query: watchQuery });
+
+  console.log(getPost.data?.authorId);
 
   const invalidateCurrentPage = useCallback(() => {
     postRoute.getPost.invalidate({ slug: router.query.slug as string });
@@ -39,6 +62,25 @@ const PostPage = () => {
   const dislikePost = trpc.post.dislikePost.useMutation({
     onSuccess: () => {
       invalidateCurrentPage();
+    },
+  });
+
+  const deletePostRoute = trpc.post.deletePost.useMutation({
+    onSuccess: () => {
+      //
+      toast.success("Post deleted successfully");
+      router.push("/");
+    },
+  });
+  const deletePost = () => {
+    {
+      getPost.data?.id && deletePostRoute.mutate({ postId: getPost.data.id });
+    }
+  };
+
+  const addAuthor = trpc.post.AddAuthor.useMutation({
+    onSuccess: () => {
+      toast.success("Author Add Succesfully");
     },
   });
 
@@ -61,6 +103,82 @@ const PostPage = () => {
           postId={getPost.data?.id}
         />
       )}
+      {getPost.isSuccess && (
+        <UpdateFormModal
+          title={getPost.data?.title}
+          text={getPost.data?.text as string}
+          description={getPost.data?.description}
+          html={getPost.data?.html as string}
+          tags={getPost.data?.tags as any}
+          postId={getPost.data?.id as string}
+        />
+      )}
+
+      <Modal onClose={() => setDeletePostModal(false)} isOpen={deletePostModal}>
+        <div className="flex flex-col items-center space-y-4">
+          <p className="text-2xl">Are you sure you want to delete this post?</p>
+          <div className="flex items-center justify-center space-x-4">
+            <button
+              onClick={deletePost}
+              className="rounded-md border bg-red-400 px-4 py-2 text-white transition-all hover:border-gray-200 hover:bg-white hover:text-black active:scale-105 "
+            >
+              Yes
+            </button>
+            <button
+              onClick={() => setDeletePostModal(false)}
+              className="rounded-md border bg-black px-4 py-2 text-white transition-all hover:border-gray-200 hover:bg-white hover:text-black active:scale-105 "
+            >
+              No
+            </button>
+          </div>
+        </div>
+      </Modal>
+      <Modal onClose={() => setAuthorModal(false)} isOpen={authorModal}>
+        <div className="h-96 ">
+          <input
+            className=" w-full rounded-xl border border-gray-300 p-4 outline-none placeholder:text-sm focus:border-gray-600"
+            type="text"
+            placeholder="Serach People"
+            id="shortDescription"
+            {...register("search")}
+          />
+          <div className="mt-4 flex h-full flex-col  space-y-4 overflow-y-scroll px-4 pb-20 ">
+            {getAllUsers.data &&
+              getAllUsers.data.map((user) => {
+                return (
+                  <div
+                    key={user.id}
+                    className="flex items-center justify-between rounded-md border-2 px-3 py-4 "
+                  >
+                    <div className="flex items-center space-x-4">
+                      <div className="relative h-10 w-10">
+                        <Image
+                          fill
+                          src={user.image as string}
+                          alt="image"
+                          className="rounded-full"
+                        />
+                      </div>
+
+                      <h2> {user.name}</h2>
+                    </div>
+                    <button
+                      onClick={() =>
+                        addAuthor.mutate({
+                          userId: user.id,
+                          postId: getPost.data?.id ? getPost.data?.id : "",
+                        })
+                      }
+                      className="rounded-md border bg-black  p-2 text-white transition-all hover:bg-white hover:text-black active:scale-95"
+                    >
+                      Add Author
+                    </button>
+                  </div>
+                );
+              })}
+          </div>
+        </div>
+      </Modal>
 
       {getPost.isLoading && (
         <div className="flex h-full w-full items-center justify-center space-x-6">
@@ -136,6 +254,35 @@ const PostPage = () => {
           {/* <div>{getPost.data?.text}</div> */}
           <div className="prose lg:prose-xl">
             <Interweave content={getPost.data?.html} />
+          </div>
+          <div className="flex justify-between  space-x-4">
+            <div className="flex  space-x-4">
+              {data?.user?.id === getPost.data?.authorId && (
+                <div
+                  onClick={() => setIsUpdateModalOpen(true)}
+                  className=" z-10 w-fit cursor-pointer rounded-lg bg-black/60 px-4  py-1  text-2xl text-white transition-all hover:scale-95 hover:bg-black"
+                >
+                  Edit Post
+                </div>
+              )}
+              {data?.user?.id === getPost.data?.authorId && (
+                <div
+                  onClick={() => setDeletePostModal(true)}
+                  className=" z-10 w-fit cursor-pointer rounded-lg bg-black/60 px-4    py-1 text-2xl text-white hover:scale-95 hover:bg-black"
+                >
+                  Delete Post
+                </div>
+              )}
+            </div>
+
+            {data?.user?.id === getPost.data?.authorId && (
+              <div
+                onClick={() => setAuthorModal(true)}
+                className=" z-10 w-fit cursor-pointer rounded-lg bg-black/60 px-4  py-1  text-2xl text-white transition-all hover:scale-95 hover:bg-black"
+              >
+                Add Author
+              </div>
+            )}
           </div>
         </div>
       </div>

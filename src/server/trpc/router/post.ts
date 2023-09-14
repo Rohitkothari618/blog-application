@@ -45,6 +45,35 @@ export const postRouter = router({
       }
     ),
 
+  AddAuthor: protectedProcedure
+    .input(
+      z.object({
+        postId: z.string(),
+        userId: z.string(),
+      })
+    )
+    .mutation(async ({ ctx: { prisma }, input: { postId, userId } }) => {
+      //
+      const author = await prisma.authors.create({
+        data: {
+          postId: postId,
+          userId: userId,
+        },
+      });
+      await prisma.post.update({
+        where: { id: postId },
+        data: {
+          authors: {
+            connect: {
+              id: author.id,
+            },
+          },
+        },
+      });
+
+      return author;
+    }),
+
   updatePostFeaturedImage: protectedProcedure
     .input(
       z.object({
@@ -73,6 +102,58 @@ export const postRouter = router({
           },
           data: {
             featuredImage: imageUrl,
+          },
+        });
+      }
+    ),
+
+  deletePost: protectedProcedure
+    .input(
+      z.object({
+        postId: z.string(),
+      })
+    )
+    .mutation(async ({ ctx: { prisma }, input: { postId } }) => {
+      await prisma.post.delete({
+        where: {
+          id: postId,
+        },
+      });
+    }),
+
+  updatePost: protectedProcedure
+    .input(
+      z.object({
+        postId: z.string(),
+        title: z.string(),
+        description: z.string(),
+
+        html: z.string(),
+        tagsIds: z
+          .array(
+            z.object({
+              id: z.string(),
+            })
+          )
+          .optional(),
+      })
+    )
+    .mutation(
+      async ({
+        ctx: { prisma },
+        input: { title, description, html, tagsIds, postId },
+      }) => {
+        await prisma.post.update({
+          where: {
+            id: postId,
+          },
+          data: {
+            title: title,
+            description: description,
+            html: html,
+            tags: {
+              connect: tagsIds,
+            },
           },
         });
       }
@@ -160,6 +241,7 @@ export const postRouter = router({
           authorId: true,
           slug: true,
           featuredImage: true,
+          tags: true,
         },
       });
       return post;
@@ -179,6 +261,7 @@ export const postRouter = router({
         },
       });
     }),
+
   dislikePost: protectedProcedure
     .input(
       z.object({
@@ -195,6 +278,7 @@ export const postRouter = router({
         },
       });
     }),
+
   bookmarkPost: protectedProcedure
     .input(
       z.object({
@@ -209,6 +293,7 @@ export const postRouter = router({
         },
       });
     }),
+
   removeBookmark: protectedProcedure
     .input(
       z.object({
@@ -298,6 +383,7 @@ export const postRouter = router({
               title: true,
               description: true,
               createdAt: true,
+              featuredImage: true,
               author: {
                 select: {
                   name: true,
@@ -312,4 +398,20 @@ export const postRouter = router({
       return allBookmarks;
     }
   ),
+
+  getPostWithSameTags: publicProcedure
+    .input(
+      z.object({
+        tagname: z.string(),
+      })
+    )
+    .query(async ({ ctx: { prisma }, input: { tagname } }) => {
+      // Console.log("Something")
+      const allTagPost = await prisma.post.findMany({
+        where: {},
+        select: {
+          id: true,
+        },
+      });
+    }),
 });

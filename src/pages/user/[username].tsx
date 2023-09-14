@@ -10,7 +10,6 @@ import { SlShareAlt } from "react-icons/sl";
 import Post from "../../components/Post";
 import { useSession } from "next-auth/react";
 import Modal from "../../components/Modal";
-import { userRouter } from "../../server/trpc/router/user";
 
 const UserProfilePage = () => {
   const router = useRouter();

@@ -1,4 +1,4 @@
-import React, { useContext, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import Modal from "../Modal";
 import { globalContext } from "../../context/GlobalContextProvider";
 import { Controller, useForm } from "react-hook-form";
@@ -29,11 +29,31 @@ export const writeFormSchema = z.object({
   title: z.string().min(10),
   description: z.string().min(60),
   text: z.string().min(100).optional(),
-  html: z.string(),
+  html: z.string().min(100),
 });
+type updateFormModalProps = {
+  title?: string;
+  description?: string;
+  text?: string;
+  html?: string;
+  postId: string;
+  tags: {
+    id: string;
+    name: string;
+    description: string | null;
+    slug: string;
+  }[];
+};
 
-const WriteFormModal = () => {
-  const { isWriteModalOpen, setIsWriteModalOpen } = useContext(globalContext);
+const UpdateFormModal = ({
+  title,
+  description,
+  text,
+  postId,
+  html,
+  tags,
+}: updateFormModalProps) => {
+  const { isUpdateModalOpen, setIsUpdateModalOpen } = useContext(globalContext);
   const [isTagCreateModalOpen, setIsTagCreateModalOpen] = useState(false);
   const [selectedTags, setSelcetedTags] = useState<Tag[]>([]);
 
@@ -47,30 +67,38 @@ const WriteFormModal = () => {
     resolver: zodResolver(writeFormSchema),
   });
 
+  useEffect(() => {
+    tags.map((tag) => {
+      setSelcetedTags((prev) => [...prev, tag]);
+    });
+  }, [tags]);
   const postRoute = trpc.useContext().post;
+  const getPost = trpc.useContext().post.getPost;
 
-  const createPost = trpc.post.createPost.useMutation({
+  const updatePost = trpc.post.updatePost.useMutation({
     onSuccess: () => {
-      toast.success("Post Created Succesfully");
-      setIsWriteModalOpen(false);
+      toast.success("Post Updated Succesfully");
+      setIsUpdateModalOpen(false);
       reset();
+
       postRoute.getPosts.invalidate();
+      getPost.invalidate();
     },
   });
 
   const onSubmit = (data: WriteFormType) => {
     const mutationData =
       selectedTags.length > 0 ? { ...data, tagsIds: selectedTags } : data;
-
-    createPost.mutate(mutationData);
+    console.log({ ...mutationData, postId });
+    updatePost.mutate({ ...mutationData, postId });
   };
   const getTags = trpc.tag.getTags.useQuery();
 
   return (
     <>
       <Modal
-        isOpen={isWriteModalOpen}
-        onClose={() => setIsWriteModalOpen(false)}
+        isOpen={isUpdateModalOpen}
+        onClose={() => setIsUpdateModalOpen(false)}
       >
         {getTags.isSuccess && (
           <>
@@ -122,7 +150,7 @@ const WriteFormModal = () => {
           onSubmit={handleSubmit(onSubmit)}
           className="relative flex flex-col items-center justify-center space-y-4"
         >
-          {createPost.isLoading && (
+          {updatePost.isLoading && (
             <div className="absolute flex h-full w-full items-center justify-center">
               <AiOutlineLoading3Quarters className="animate-spin " />
             </div>
@@ -132,7 +160,7 @@ const WriteFormModal = () => {
             id="title"
             placeholder="Title of the blog"
             className="h-full w-full rounded-xl border border-gray-300 p-4 outline-none placeholder:text-sm focus:border-gray-600"
-            {...register("title")}
+            {...register("title", { value: title })}
           />
           <p className="w-full pb-4 text-sm text-red-400 ">
             {errors.title?.message}
@@ -141,7 +169,7 @@ const WriteFormModal = () => {
             className="h-full w-full rounded-xl border border-gray-300 p-4 outline-none placeholder:text-sm focus:border-gray-600"
             type="text"
             placeholder="Enter short Description"
-            {...register("description")}
+            {...register("description", { value: description })}
             id="shortDescription"
           />
           <p className="w-full pb-4 text-sm text-red-400 ">
@@ -158,12 +186,11 @@ const WriteFormModal = () => {
           <Controller
             name="html"
             control={control}
-            defaultValue={""}
+            defaultValue={html || ""}
             render={({ field }) => (
               <div className="w-full">
                 <ReactQuill
                   theme="snow"
-                  {...field}
                   value={field.value}
                   placeholder="Write The blog body here"
                   onChange={(value) => field.onChange(value)}
@@ -180,7 +207,7 @@ const WriteFormModal = () => {
               type="submit"
               className="flex items-center space-x-3 rounded-md border border-gray-200 px-4 py-2 transition hover:border-gray-900 hover:text-gray-900 "
             >
-              Publish
+              Update Post
             </button>
           </div>
         </form>
@@ -189,4 +216,4 @@ const WriteFormModal = () => {
   );
 };
 
-export default WriteFormModal;
+export default UpdateFormModal;

@@ -1,12 +1,9 @@
 import React from "react";
-
 import { CiSearch } from "react-icons/ci";
 import { HiMiniChevronDown } from "react-icons/hi2";
 import InfiniteScroll from "react-infinite-scroll-component";
 import { AiOutlineLoading3Quarters } from "react-icons/ai";
-
 import { trpc } from "../../utils/trpc";
-
 import Post from "../Post";
 import { BiLoaderCircle } from "react-icons/bi";
 
@@ -17,7 +14,7 @@ const MainSection = () => {
       getNextPageParam: (lastPage) => lastPage.nextCursor,
     }
   );
-  console.log(getPosts.data);
+
   return (
     <main className="col-span-8 h-full w-full border-r border-gray-300 px-24  ">
       <div className="flex flex-col space-y-4 py-10">
@@ -83,7 +80,7 @@ const MainSection = () => {
           }
           endMessage={
             <p style={{ textAlign: "center" }}>
-              <b>Yay! You have seen it all</b>
+              {!getPosts.isLoading && <b>Yay! You have seen it all</b>}
             </p>
           }
         >

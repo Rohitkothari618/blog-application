@@ -28,7 +28,9 @@ const SideSection = () => {
                 key={user.id}
                 className="flex flex-row items-center space-x-5"
               >
-                <div className="h-10 w-10 flex-none rounded-full bg-gray-300"></div>
+                <div className="relative h-10 w-10 flex-none overflow-hidden rounded-full bg-gray-300">
+                  {user.image && <Image src={user.image} alt={user.id} fill />}
+                </div>
                 <div>
                   <div className="text-sm font-bold text-gray-900">
                     {user.name}
@@ -64,7 +66,15 @@ const SideSection = () => {
                 key={bookmark.id}
                 className="group flex items-center space-x-6"
               >
-                <div className="aspect-square h-full w-2/5 rounded-xl bg-gray-300"></div>
+                <div className="relative aspect-square h-full w-2/5 overflow-hidden rounded-xl bg-gray-300">
+                  {bookmark.post.featuredImage && (
+                    <Image
+                      src={bookmark.post.featuredImage}
+                      alt={bookmark.post.slug}
+                      fill
+                    />
+                  )}
+                </div>
                 <div className=" flex w-3/5 flex-col space-y-2">
                   <div className="text-lg font-semibold decoration-indigo-600 group-hover:underline">
                     {bookmark.post.title}

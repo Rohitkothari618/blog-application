@@ -29,7 +29,10 @@ const UnsplashGallary = ({
   postId,
   slug,
 }: unsplashGalleryProps) => {
-  const { register, watch, reset } = useForm<{ searchQuery: string }>({
+  const [isLoading, setIsLoading] = useState(false);
+  const { register, watch, reset, handleSubmit } = useForm<{
+    searchQuery: string;
+  }>({
     resolver: zodResolver(unsplashSearchRouterSchema),
   });
 
@@ -58,18 +61,35 @@ const UnsplashGallary = ({
       utils.post.getPost.invalidate({ slug });
     },
   });
+
+  const onSubmit = ({}) => {
+    setIsLoading(true);
+  };
   return (
     <Modal isOpen={isOpen} onClose={onClose}>
-      <div className="flex flex-col items-center  justify-center space-y-4">
-        <input
-          type="text"
-          id="search"
-          {...register("searchQuery")}
-          className="h-full w-full rounded-xl border border-gray-300 p-4 outline-none placeholder:text-sm focus:border-gray-600"
-        />
-        {debouncedSearchQuery && fetchUnsplashImages.isLoading && (
-          <div className="flex h-56 w-full items-center justify-center">
-            <BiLoaderAlt className="animate-spin" />
+      <div className="relative flex flex-col items-center  justify-center space-y-4">
+        <form
+          onSubmit={handleSubmit(onSubmit)}
+          className="flex w-full items-center justify-around space-x-4"
+        >
+          <input
+            type="text"
+            id="search"
+            {...register("searchQuery")}
+            className="h-full w-full rounded-xl border border-gray-300 p-4 outline-none placeholder:text-sm focus:border-gray-600"
+            placeholder="search Images..."
+          />{" "}
+          <button
+            type="submit"
+            className=" rounded-lg  bg-black  p-1 text-white "
+          >
+            Get Images
+          </button>
+        </form>
+
+        {isLoading && fetchUnsplashImages.isLoading && (
+          <div className="absolute flex h-full  w-full items-center justify-center  ">
+            <BiLoaderAlt className="animate-spin text-4xl" />
           </div>
         )}
         <div className="relative   grid h-96 w-full grid-cols-3 place-items-center gap-4 overflow-y-auto">

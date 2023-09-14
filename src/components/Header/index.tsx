@@ -51,7 +51,7 @@ const Header = () => {
               onClick={async () => await signOut()}
               className="flex items-center space-x-3 rounded-md border border-gray-200 px-4 py-2 transition hover:border-gray-900 hover:text-gray-900 "
             >
-              <div>Logut</div>
+              <div>Logout</div>
               <div>
                 <FiLogOut className="text-gray-600" />
               </div>

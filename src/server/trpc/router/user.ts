@@ -73,6 +73,36 @@ export const userRouter = router({
       });
     }
   ),
+
+  getAllUser: protectedProcedure
+    .input(
+      z.object({
+        query: z.string(),
+      })
+    )
+    .query(async ({ ctx: { prisma }, input: { query } }) => {
+      const words = query.split(" ");
+      console.log(words);
+
+      const orConditions = words.map((word) => ({
+        name: {
+          contains: word, // Check if the name contains the word
+        },
+      }));
+      const users = await prisma.user.findMany({
+        where: {
+          OR: orConditions,
+        },
+        select: {
+          id: true,
+          name: true,
+          image: true,
+          username: true,
+          email: true,
+        },
+      });
+      return users;
+    }),
   getUserProfile: publicProcedure
     .input(
       z.object({
