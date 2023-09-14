@@ -54,24 +54,12 @@ export const postRouter = router({
     )
     .mutation(async ({ ctx: { prisma }, input: { postId, userId } }) => {
       //
-      const author = await prisma.authors.create({
-        data: {
-          postId: postId,
-          userId: userId,
-        },
-      });
-      await prisma.post.update({
-        where: { id: postId },
-        data: {
-          authors: {
-            connect: {
-              id: author.id,
-            },
-          },
-        },
-      });
-
-      return author;
+      // await prisma.authors.create({
+      //   data: {
+      //     postId: postId,
+      //     userId: userId,
+      //   },
+      // });
     }),
 
   updatePostFeaturedImage: protectedProcedure
@@ -143,6 +131,24 @@ export const postRouter = router({
         ctx: { prisma },
         input: { title, description, html, tagsIds, postId },
       }) => {
+        const currentTags = await prisma.post
+          .findUnique({
+            where: {
+              id: postId,
+            },
+          })
+          .tags();
+
+        await prisma.post.update({
+          where: {
+            id: postId,
+          },
+          data: {
+            tags: {
+              disconnect: currentTags?.map((tag) => ({ id: tag.id })),
+            },
+          },
+        });
         await prisma.post.update({
           where: {
             id: postId,

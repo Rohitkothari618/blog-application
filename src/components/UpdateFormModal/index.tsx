@@ -90,6 +90,7 @@ const UpdateFormModal = ({
     const mutationData =
       selectedTags.length > 0 ? { ...data, tagsIds: selectedTags } : data;
     console.log({ ...mutationData, postId });
+
     updatePost.mutate({ ...mutationData, postId });
   };
   const getTags = trpc.tag.getTags.useQuery();

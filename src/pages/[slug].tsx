@@ -48,8 +48,6 @@ const PostPage = () => {
   );
   const getAllUsers = trpc.user.getAllUser.useQuery({ query: watchQuery });
 
-  console.log(getPost.data?.authorId);
-
   const invalidateCurrentPage = useCallback(() => {
     postRoute.getPost.invalidate({ slug: router.query.slug as string });
   }, [postRoute.getPost, router.query.slug]);
