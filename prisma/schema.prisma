@@ -56,6 +56,7 @@ model User {
   posts         Post[]
   likes Like[]
   bookmarks Bookmark[]
+  postAuthors PostAuthor[]
 
   followedBy User[] @relation("userFollows")
   followings User[] @relation("userFollows")
@@ -84,13 +85,24 @@ model Post{
   authorId String
   author User @relation(fields: [authorId],references: [id])
 
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
+  authors       PostAuthor[]
   tags Tag[]
   comments Comment[]
   likes Like[]
   bookmarks Bookmark[]
+}
+
+
+model PostAuthor {
+  id        String @id @default(cuid())
+  postId    String
+  post      Post   @relation(fields: [postId], references: [id])
+  authorId  String
+  author    User   @relation(fields: [authorId], references: [id])
+
 }
 
 model Tag{

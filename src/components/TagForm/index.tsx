@@ -26,9 +26,11 @@ const TagForm = ({ isOpen, onClose }: TagFormTypes) => {
     resolver: zodResolver(tagCreateSchema),
   });
 
+  const tagRoute = trpc.useContext().tag;
   const createTag = trpc.tag.createTag.useMutation({
     onSuccess: () => {
       toast.success("Tags Successfully Created");
+      tagRoute.getTags.invalidate();
       reset();
       onClose();
     },

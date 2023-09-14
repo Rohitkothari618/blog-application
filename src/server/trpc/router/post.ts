@@ -37,6 +37,7 @@ export const postRouter = router({
                 id: session.user.id,
               },
             },
+
             tags: {
               connect: tagsIds,
             },
@@ -45,7 +46,7 @@ export const postRouter = router({
       }
     ),
 
-  AddAuthor: protectedProcedure
+  addAuthor: protectedProcedure
     .input(
       z.object({
         postId: z.string(),
@@ -53,13 +54,37 @@ export const postRouter = router({
       })
     )
     .mutation(async ({ ctx: { prisma }, input: { postId, userId } }) => {
-      //
-      // await prisma.authors.create({
-      //   data: {
-      //     postId: postId,
-      //     userId: userId,
-      //   },
-      // });
+      const createdAuthor = await prisma.postAuthor.create({
+        data: {
+          postId,
+          authorId: userId,
+        },
+      });
+
+      return createdAuthor;
+    }),
+
+  removerAuthor: protectedProcedure
+    .input(
+      z.object({
+        postId: z.string(),
+      })
+    )
+    .mutation(async ({ ctx: { prisma }, input: { postId } }) => {
+      try {
+        await prisma.postAuthor.deleteMany({
+          where: {
+            postId: postId,
+          },
+        });
+
+        return {
+          success: true,
+          message: "Posts by author removed successfully.",
+        };
+      } catch (error: any) {
+        return { success: false, error: error.message };
+      }
     }),
 
   updatePostFeaturedImage: protectedProcedure
@@ -76,11 +101,21 @@ export const postRouter = router({
           where: {
             id: postId,
           },
+          select: {
+            authors: true,
+            authorId: true,
+          },
         });
-        if (postData?.authorId != session.user.id) {
+
+        if (
+          postData?.authorId !== session.user.id &&
+          !postData?.authors.some(
+            (author) => author.authorId == session.user.id
+          )
+        ) {
           throw new TRPCError({
             code: "FORBIDDEN",
-            message: "you are no owner of this post",
+            message: "You are not the owner of this post.",
           });
         }
 
@@ -128,9 +163,31 @@ export const postRouter = router({
     )
     .mutation(
       async ({
-        ctx: { prisma },
+        ctx: { prisma, session },
         input: { title, description, html, tagsIds, postId },
       }) => {
+        const postData = await prisma.post.findUnique({
+          where: {
+            id: postId,
+          },
+          select: {
+            authors: true,
+            authorId: true,
+          },
+        });
+
+        if (
+          postData?.authorId !== session.user.id &&
+          !postData?.authors.some(
+            (author) => author.authorId == session.user.id
+          )
+        ) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "You are not the owner of this post.",
+          });
+        }
+
         const currentTags = await prisma.post
           .findUnique({
             where: {
@@ -245,6 +302,7 @@ export const postRouter = router({
               }
             : false,
           authorId: true,
+          authors: true,
           slug: true,
           featuredImage: true,
           tags: true,

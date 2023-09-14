@@ -16,7 +16,7 @@ import { globalContext } from "../context/GlobalContextProvider";
 import UpdateFormModal from "../components/UpdateFormModal";
 import Modal from "../components/Modal";
 import toast from "react-hot-toast";
-import { useForm, useWatch } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 
@@ -46,6 +46,8 @@ const PostPage = () => {
       enabled: Boolean(router.query.slug),
     }
   );
+
+  console.log(getPost.data);
   const getAllUsers = trpc.user.getAllUser.useQuery({ query: watchQuery });
 
   const invalidateCurrentPage = useCallback(() => {
@@ -76,9 +78,19 @@ const PostPage = () => {
     }
   };
 
-  const addAuthor = trpc.post.AddAuthor.useMutation({
+  const addAuthor = trpc.post.addAuthor.useMutation({
     onSuccess: () => {
       toast.success("Author Add Succesfully");
+
+      postRoute.getPost.invalidate();
+    },
+  });
+
+  const removerAuthor = trpc.post.removerAuthor.useMutation({
+    onSuccess: () => {
+      toast.success("Author Remove Succesfully");
+
+      postRoute.getPost.invalidate();
     },
   });
 
@@ -160,17 +172,32 @@ const PostPage = () => {
 
                       <h2> {user.name}</h2>
                     </div>
-                    <button
-                      onClick={() =>
-                        addAuthor.mutate({
-                          userId: user.id,
-                          postId: getPost.data?.id ? getPost.data?.id : "",
-                        })
-                      }
-                      className="rounded-md border bg-black  p-2 text-white transition-all hover:bg-white hover:text-black active:scale-95"
-                    >
-                      Add Author
-                    </button>
+                    {getPost.data?.authors.some(
+                      (author) => author.authorId === user.id
+                    ) ? (
+                      <button
+                        onClick={() =>
+                          removerAuthor.mutate({
+                            postId: getPost?.data?.id as string,
+                          })
+                        }
+                        className="rounded-md border bg-black  p-2 text-white transition-all hover:bg-white hover:text-black active:scale-95"
+                      >
+                        remove Author
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() =>
+                          addAuthor.mutate({
+                            userId: user.id,
+                            postId: getPost.data?.id ? getPost.data?.id : "",
+                          })
+                        }
+                        className="rounded-md border bg-black  p-2 text-white transition-all hover:bg-white hover:text-black active:scale-95"
+                      >
+                        Add Author
+                      </button>
+                    )}
                   </div>
                 );
               })}
@@ -232,14 +259,18 @@ const PostPage = () => {
                 className="rounded-xl"
               />
             )}
-            {data?.user?.id === getPost.data?.authorId && (
-              <div
-                onClick={() => setIsUnsplashModalOpen(true)}
-                className="absolute left-2 top-2 z-10 cursor-pointer rounded-lg bg-black/30    p-2 text-2xl text-white hover:bg-black"
-              >
-                <BiImageAdd className=" " />
-              </div>
-            )}
+            {data?.user &&
+              (getPost.data?.authorId === data.user.id ||
+                getPost.data?.authors.some(
+                  (author) => author.authorId === data?.user?.id
+                )) && (
+                <div
+                  onClick={() => setIsUnsplashModalOpen(true)}
+                  className="absolute left-2 top-2 z-10 cursor-pointer rounded-lg bg-black/30    p-2 text-2xl text-white hover:bg-black"
+                >
+                  <BiImageAdd className=" " />
+                </div>
+              )}
             <div className="absolute flex h-full w-full items-center justify-center">
               <div className="rounded-xl bg-black/50 p-4 text-3xl text-white">
                 {getPost.data?.title}
@@ -255,31 +286,35 @@ const PostPage = () => {
           </div>
           <div className="flex justify-between  space-x-4">
             <div className="flex  space-x-4">
+              {data?.user &&
+                (getPost.data?.authorId === data.user.id ||
+                  getPost.data?.authors.some(
+                    (author) => author.authorId === data?.user?.id
+                  )) && (
+                  <button
+                    onClick={() => setIsUpdateModalOpen(true)}
+                    className="z-10 w-fit cursor-pointer rounded-lg bg-black/60 px-4 py-1 text-2xl text-white transition-all hover:scale-95 hover:bg-black"
+                  >
+                    Edit Post
+                  </button>
+                )}
               {data?.user?.id === getPost.data?.authorId && (
-                <div
-                  onClick={() => setIsUpdateModalOpen(true)}
-                  className=" z-10 w-fit cursor-pointer rounded-lg bg-black/60 px-4  py-1  text-2xl text-white transition-all hover:scale-95 hover:bg-black"
-                >
-                  Edit Post
-                </div>
-              )}
-              {data?.user?.id === getPost.data?.authorId && (
-                <div
+                <button
                   onClick={() => setDeletePostModal(true)}
                   className=" z-10 w-fit cursor-pointer rounded-lg bg-black/60 px-4    py-1 text-2xl text-white hover:scale-95 hover:bg-black"
                 >
                   Delete Post
-                </div>
+                </button>
               )}
             </div>
 
             {data?.user?.id === getPost.data?.authorId && (
-              <div
+              <button
                 onClick={() => setAuthorModal(true)}
                 className=" z-10 w-fit cursor-pointer rounded-lg bg-black/60 px-4  py-1  text-2xl text-white transition-all hover:scale-95 hover:bg-black"
               >
                 Add Author
-              </div>
+              </button>
             )}
           </div>
         </div>

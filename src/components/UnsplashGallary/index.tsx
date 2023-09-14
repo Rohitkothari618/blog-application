@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -46,6 +46,11 @@ const UnsplashGallary = ({
     },
     {
       enabled: Boolean(debouncedSearchQuery),
+      onError: (error) => {
+        const errorObject = JSON.parse(error.message);
+        console.log(errorObject[0].message);
+        toast.error(errorObject[0].message);
+      },
     }
   );
 
@@ -57,6 +62,7 @@ const UnsplashGallary = ({
     onSuccess: () => {
       onClose();
       reset();
+      setIsLoading(false);
       toast.success("Fetured Image Updated");
       utils.post.getPost.invalidate({ slug });
     },
@@ -65,6 +71,13 @@ const UnsplashGallary = ({
   const onSubmit = ({}) => {
     setIsLoading(true);
   };
+
+  useEffect(() => {
+    if (debouncedSearchQuery) {
+      setIsLoading(true);
+    }
+  }, [debouncedSearchQuery]);
+
   return (
     <Modal isOpen={isOpen} onClose={onClose}>
       <div className="relative flex flex-col items-center  justify-center space-y-4">
@@ -88,7 +101,7 @@ const UnsplashGallary = ({
         </form>
 
         {isLoading && fetchUnsplashImages.isLoading && (
-          <div className="absolute flex h-full  w-full items-center justify-center  ">
+          <div className="absolute -z-10 flex h-full  w-full items-center justify-center  ">
             <BiLoaderAlt className="animate-spin text-4xl" />
           </div>
         )}
