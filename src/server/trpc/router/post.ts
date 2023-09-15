@@ -54,16 +54,18 @@ export const postRouter = router({
         userId: z.string(),
       })
     )
-    .mutation(async ({ ctx: { prisma }, input: { postId, userId } }) => {
-      const createdAuthor = await prisma.postAuthor.create({
-        data: {
-          postId,
-          authorId: userId,
-        },
-      });
+    .mutation(
+      async ({ ctx: { prisma, session }, input: { postId, userId } }) => {
+        const createdAuthor = await prisma.postAuthor.create({
+          data: {
+            postId,
+            authorId: userId,
+          },
+        });
 
-      return createdAuthor;
-    }),
+        return createdAuthor;
+      }
+    ),
 
   removerAuthor: protectedProcedure
     .input(

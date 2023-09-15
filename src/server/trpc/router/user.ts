@@ -80,19 +80,31 @@ export const userRouter = router({
         query: z.string(),
       })
     )
-    .query(async ({ ctx: { prisma }, input: { query } }) => {
-      const words = query.split(" ");
-      console.log(words);
+    .query(async ({ ctx: { prisma, session }, input: { query } }) => {
+      const words = query.match(/\S+/g) || [];
 
       const orConditions = words.map((word) => ({
         name: {
-          contains: word, // Check if the name contains the word
+          contains: word,
         },
       }));
+
       const users = await prisma.user.findMany({
         where: {
-          OR: orConditions,
+          AND: [
+            {
+              OR: orConditions,
+            },
+            {
+              NOT: {
+                id: {
+                  equals: session.user.id,
+                },
+              },
+            },
+          ],
         },
+
         select: {
           id: true,
           name: true,
@@ -103,6 +115,7 @@ export const userRouter = router({
       });
       return users;
     }),
+
   getUserProfile: publicProcedure
     .input(
       z.object({
@@ -382,7 +395,7 @@ export const userRouter = router({
         userId: z.string(),
       })
     )
-    .query(async ({ ctx: { prisma, session }, input: { userId } }) => {
+    .query(async ({ ctx: { prisma }, input: { userId } }) => {
       return await prisma.user.findUnique({
         where: {
           id: userId,

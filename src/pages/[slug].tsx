@@ -58,6 +58,9 @@ const PostPage = () => {
       invalidateCurrentPage();
       postRoute.invalidate();
     },
+    onError: (error) => {
+      toast.error(error.message);
+    },
   });
   const dislikePost = trpc.post.dislikePost.useMutation({
     onSuccess: () => {
