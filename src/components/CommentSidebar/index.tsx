@@ -43,6 +43,7 @@ const CommentSidebar = ({
       postRoute.getComments.invalidate({
         postId,
       });
+      postRoute.invalidate();
       reset();
     },
     onError: (error) => {
@@ -66,7 +67,9 @@ const CommentSidebar = ({
             <Dialog.Panel className="relative h-screen w-[200px]  bg-white shadow-md  sm:w-[400px] ">
               <div className="flex h-full w-full flex-col space-y-4 overflow-y-scroll px-6">
                 <div className="mb-5 mt-10 flex items-center justify-between  text-xl ">
-                  <h2 className=" font-semibold">Responses (4)</h2>
+                  <h2 className=" font-semibold">
+                    Responses ({getComments.data?.length})
+                  </h2>
                   <div className="text-lg font-semibold">
                     <HiXMark
                       className="cursor-pointer "

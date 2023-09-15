@@ -47,7 +47,6 @@ const PostPage = () => {
     }
   );
 
-  console.log(getPost.data);
   const getAllUsers = trpc.user.getAllUser.useQuery({ query: watchQuery });
 
   const invalidateCurrentPage = useCallback(() => {
@@ -57,11 +56,13 @@ const PostPage = () => {
   const likePost = trpc.post.likePost.useMutation({
     onSuccess: () => {
       invalidateCurrentPage();
+      postRoute.invalidate();
     },
   });
   const dislikePost = trpc.post.dislikePost.useMutation({
     onSuccess: () => {
       invalidateCurrentPage();
+      postRoute.invalidate();
     },
   });
 
@@ -92,6 +93,10 @@ const PostPage = () => {
 
       postRoute.getPost.invalidate();
     },
+  });
+
+  const getLikes = trpc.post.getLikes.useQuery({
+    postId: getPost.data?.id as string,
   });
 
   const [showCommentSidebar, setShowCommentSidebar] = useState(false);
@@ -179,6 +184,7 @@ const PostPage = () => {
                         onClick={() =>
                           removerAuthor.mutate({
                             postId: getPost?.data?.id as string,
+                            userId: user.id,
                           })
                         }
                         className="rounded-md border bg-black  p-2 text-white transition-all hover:bg-white hover:text-black active:scale-95"
@@ -216,7 +222,7 @@ const PostPage = () => {
       {getPost.isSuccess && (
         <div className="fixed bottom-10 flex w-full items-center justify-center ">
           <div className="group flex items-center space-x-4 rounded-full border border-gray-400 bg-white px-8 py-3 shadow-xl transition duration-300 hover:border-gray-900">
-            <div className="cursor-pointer border-r pr-4 group-hover:border-gray-900">
+            <div className="flex cursor-pointer items-center justify-center space-x-3 border-r pr-4 group-hover:border-gray-900">
               {getPost.data?.likes && getPost.data.likes.length > 0 ? (
                 <FcLike
                   onClick={() =>
@@ -238,12 +244,18 @@ const PostPage = () => {
                   className="text-xl"
                 />
               )}
+              <p>
+                {getLikes.data?.map((like) => {
+                  return like._count.likes;
+                })}
+              </p>
             </div>
-            <div>
+            <div className="flex items-center justify-center space-x-3 ">
               <BsChat
                 className="cursor-pointer text-lg"
                 onClick={() => setShowCommentSidebar(true)}
               />
+              <p> {getPost.data?.comments?.length}</p>
             </div>
           </div>
         </div>

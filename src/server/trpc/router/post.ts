@@ -5,6 +5,7 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 
 const LIMIT = 10;
+
 export const postRouter = router({
   createPost: protectedProcedure
     .input(
@@ -68,13 +69,15 @@ export const postRouter = router({
     .input(
       z.object({
         postId: z.string(),
+        userId: z.string(),
       })
     )
-    .mutation(async ({ ctx: { prisma }, input: { postId } }) => {
+    .mutation(async ({ ctx: { prisma }, input: { postId, userId } }) => {
       try {
         await prisma.postAuthor.deleteMany({
           where: {
             postId: postId,
+            authorId: userId,
           },
         });
 
@@ -301,6 +304,7 @@ export const postRouter = router({
                 },
               }
             : false,
+          comments: true,
           authorId: true,
           authors: true,
           slug: true,
@@ -338,6 +342,29 @@ export const postRouter = router({
           userId_postId: {
             postId: postId,
             userId: session.user.id,
+          },
+        },
+      });
+    }),
+
+  getLikes: publicProcedure
+    .input(
+      z.object({
+        postId: z.string(),
+      })
+    )
+    .query(async ({ ctx: { prisma }, input: { postId } }) => {
+      //
+
+      return await prisma.post.findMany({
+        where: {
+          id: postId,
+        },
+        select: {
+          _count: {
+            select: {
+              likes: true,
+            },
           },
         },
       });
@@ -463,19 +490,19 @@ export const postRouter = router({
     }
   ),
 
-  getPostWithSameTags: publicProcedure
-    .input(
-      z.object({
-        tagname: z.string(),
-      })
-    )
-    .query(async ({ ctx: { prisma }, input: { tagname } }) => {
-      // Console.log("Something")
-      const allTagPost = await prisma.post.findMany({
-        where: {},
-        select: {
-          id: true,
-        },
-      });
-    }),
+  // getPostWithSameTags: publicProcedure
+  //   .input(
+  //     z.object({
+  //       tagname: z.string(),
+  //     })
+  //   )
+  //   .query(async ({ ctx: { prisma }, input: { tagname } }) => {
+  //     // Console.log("Something")
+  //     const allTagPost = await prisma.post.findMany({
+  //       where: {},
+  //       select: {
+  //         id: true,
+  //       },
+  //     });
+  //   }),
 });
